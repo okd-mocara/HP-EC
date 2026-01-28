@@ -1,0 +1,60 @@
+version: '3'
+
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: app
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ./backend_Project
+      dockerfile: docker/python/Dockerfile
+    volumes:
+      - ./backend_Project/backend:/backend
+    command: python3 /backend/manage.py runserver 0.0.0.0:8000
+    ports:
+      - "8000:8000"
+    tty: true
+    depends_on:
+      - db
+    environment:
+      # Django設定は後で .env に寄せる
+      DJANGO_DEBUG: "1"
+      DB_HOST: db
+      DB_NAME: app
+      DB_USER: app
+      DB_PASSWORD: app
+      STRIPE_SECRET_KEY: "sk_test_xxx"
+      STRIPE_WEBHOOK_SECRET: "whsec_xxx"
+      FRONTEND_BASE_URL: "http://localhost:8080"
+  app:
+    build:
+      context: "./frontend"
+      dockerfile: "Dockerfile"
+    container_name: app
+    working_dir: /app
+    volumes:
+      - ./frontend/app:/app
+    ports:
+      - "8080:8080"
+    tty: true
+
+  # frontend:
+  #   build:
+  #     context: ./frontend_Project
+  #     dockerfile: docker/node/Dockerfile
+  #   volumes:
+  #     - ./frontend_Project/node/frontend:/usr/src/app/frontend
+  #   command: sh -c "cd /usr/src/app/frontend && yarn start"
+  #   ports:
+  #     - "3000:3000"
+  
+volumes:
+  pgdata:
